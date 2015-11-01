@@ -19,12 +19,25 @@ class SqsCi
     poller = Aws::SQS::QueuePoller.new(q)
 
     poller.poll do |msg|
-      puts msg.inspect
+      body = JSON.parse(msg['body'])
+      puts JSON.pretty_generate body
+
+      message = JSON.parse(body['Message'])
+      puts JSON.pretty_generate message
+
+      puts "name: #{message['repository']['name']}"
+      puts "repository: #{message['repository']['url']}"
+      puts "ref: #{message['ref']}"
 
       s3 = Aws::S3::Resource.new(region:'us-west-2')
+      puts s3.inspect
+
       obj = s3.bucket(s3_bucket).object('test')
+      puts obj.inspect
 
       obj.put(body: 'test')
+
+      
     end
   end
 end
