@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 
 require 'sqs_ci'
-SqsCi.poll(ARGV[0])
+SqsCi.poll(ARGV)
