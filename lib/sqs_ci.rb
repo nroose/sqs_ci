@@ -114,6 +114,8 @@ class SqsCi
     end
   rescue => e
     puts "Message not processed. #{e}"
+  else
+    puts "Message processed."
   end
 
   def self.save_logs(project, commit_ref, output, dir)
