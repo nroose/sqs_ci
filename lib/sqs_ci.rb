@@ -80,7 +80,7 @@ class SqsCi
 
     commit_ref = message['head_commit']['id']
 
-    output = `cd #{project} && git checkout #{commit_ref} && git pull && #{command}`
+    output = `cd #{project} && git pull && git checkout #{commit_ref} && #{command}`
     puts output
 
     # set status for each test
