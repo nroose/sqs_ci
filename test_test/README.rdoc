@@ -1,7 +1,0 @@
-== README
-
-This rails project is just for the purpose of testing the sqs_ci gem.
-
-Not sure how this rdoc format works.
-
-Another line in the readme...
