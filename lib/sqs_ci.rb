@@ -65,8 +65,8 @@ class SqsCi
     message = JSON.parse(body['Message'])
     puts JSON.pretty_generate message
 
-    if user
-      raise "user #{message["head_commit"]["author"]["name"]} does not match #{user}" unless user == message["head_commit"]["author"]["name"]
+    if user && user != message["head_commit"]["author"]["name"]
+      raise "user #{message["head_commit"]["author"]["name"]} does not match #{user}"
     end
 
     project = message['repository']['name']
@@ -87,6 +87,8 @@ class SqsCi
     # run the tests
 
     save_logs(project, commit_ref, output, "#{project}/log")
+  rescue => e
+    puts "Message not processed. #{e}"
   end
 
   def self.save_logs(project, commit_ref, output, dir)
