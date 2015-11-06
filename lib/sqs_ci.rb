@@ -125,7 +125,11 @@ class SqsCi
     obj.put(body: output)
     files = Dir.new dir
     files.each do |file|
-      obj.upload_file(file)
+      begin
+        obj.upload_file(file)
+      rescue
+        puts "Could not upload #{file}"
+      end
     end
   end
 end
