@@ -76,6 +76,7 @@ class SqsCi
     end
     project = message['repository']['name']
     puts "name: #{project}"
+    full_name ['repository']['full_name']
     repo = message['repository']['url']
     puts "repository: #{repo}"
     ref = message['ref']
@@ -84,7 +85,7 @@ class SqsCi
     puts "commit_ref: #{commit_ref}"
 
     # set status
-    create_status(project, commit_ref, 'pending',
+    create_status(full_name, commit_ref, 'pending',
                   :description => "Starting at #{Time.now}.",
                   :context => command)
     output = ''
@@ -100,17 +101,17 @@ class SqsCi
 
     # update status
     if status.success?
-      create_status(project, commit_ref,
+      create_status(full_name, commit_ref,
                     'success',
                     :description => "Finished successfully in #{time_str} at #{Time.now}.",
                     :context => command,
                     :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
     else
-      create_status(project, commit_ref,
-        'failure',
-        :description => "Failed with #{status} in #{time_str} at #{Time.now}.",
-        :context => command,
-        :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
+      create_status(full_name, commit_ref,
+                    'failure',
+                    :description => "Failed with #{status} in #{time_str} at #{Time.now}.",
+                    :context => command,
+                    :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
     end
   rescue => e
     puts "Message not processed. #{e}"
