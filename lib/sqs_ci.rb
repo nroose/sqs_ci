@@ -70,7 +70,6 @@ class SqsCi
   def self.process(msg)
     body = JSON.parse(msg['body'])
     message = JSON.parse(body['Message'])
-    puts JSON.pretty_generate message
     if user && user != message["head_commit"]["author"]["name"]
       raise "user #{message["head_commit"]["author"]["name"]} does not match #{user}"
     end
