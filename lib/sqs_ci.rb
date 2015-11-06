@@ -75,7 +75,7 @@ class SqsCi
     end
     project = message['repository']['name']
     puts "name: #{project}"
-    full_name ['repository']['full_name']
+    full_name message['repository']['full_name']
     repo = message['repository']['url']
     puts "repository: #{repo}"
     ref = message['ref']
