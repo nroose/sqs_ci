@@ -1,9 +1,18 @@
 require 'aws-sdk'
 require 'optparse'
+require "octokit"
 
 class SqsCi
   class << self
     attr_accessor(:q, :s3_bucket, :region, :command, :user)
+  end
+
+  def self.github_client
+    @github_client ||= Octokit::Client.new(:access_token => ENV["GITHUB_ACCESS_TOKEN"])
+  end
+
+  def self.create_status(repo, sha, state, *optional_params)
+    github_client.create_status(repo, sha, state, *optional_params)
   end
 
   def self.poll
@@ -60,33 +69,48 @@ class SqsCi
 
   def self.process(msg)
     body = JSON.parse(msg['body'])
-    puts JSON.pretty_generate body
-
     message = JSON.parse(body['Message'])
-    puts JSON.pretty_generate message
-
     if user && user != message["head_commit"]["author"]["name"]
       raise "user #{message["head_commit"]["author"]["name"]} does not match #{user}"
     end
-
     project = message['repository']['name']
     puts "name: #{project}"
-
     repo = message['repository']['url']
     puts "repository: #{repo}"
-
     ref = message['ref']
     puts "ref: #{ref}"
-
     commit_ref = message['head_commit']['id']
+    puts "commit_ref: #{commit_ref}"
 
-    output = `cd #{project} && git pull && git checkout #{commit_ref} && #{command}`
-    puts output
-
-    # set status for each test
-    # run the tests
-
+    # set status
+    create_status(project, commit_ref, 'pending',
+                  :description => "Starting at #{Time.now}.",
+                  :context => command)
+    output = ''
+    secs = Benchmark.realtime do
+      output = `cd #{project} && git pull && git checkout #{commit_ref} && #{command}`
+    end
+    status = $?
+    mins = secs.to_i / 60
+    secs = '%.2f' % (secs % 60)
+    time_str = "#{mins}m#{secs}s"
+     
     save_logs(project, commit_ref, output, "#{project}/log")
+
+    # update status
+    if status.success?
+      create_status(project, commit_ref,
+                    'success',
+                    :description => "Finished successfully in #{time_str} at #{Time.now}.",
+                    :context => command,
+                    :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
+    else
+      create_status(project, commit_ref,
+        'failure',
+        :description => "Failed with #{status} in #{time_str} at #{Time.now}.",
+        :context => command,
+        :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
+    end
   rescue => e
     puts "Message not processed. #{e}"
   end
