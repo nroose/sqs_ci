@@ -1,6 +1,7 @@
 require 'aws-sdk'
 require 'optparse'
 require "octokit"
+require "benchmark"
 
 class SqsCi
   class << self
