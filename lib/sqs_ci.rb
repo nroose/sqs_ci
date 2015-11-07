@@ -99,7 +99,7 @@ class SqsCi
                   :context => command)
     output = ''
     secs = Benchmark.realtime do
-      output = `cd #{project} && git pull && git checkout #{commit_ref} && #{command}`
+      output = `cd #{project} && git pull && git checkout #{commit_ref} && git pull && #{command}`
     end
     status = $?
     mins = secs.to_i / 60
