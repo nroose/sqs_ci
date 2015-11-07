@@ -39,7 +39,7 @@ class SqsCi
         options[:q] = queue
       end
 
-      opts.on("-bS3_BUCKET", "--s3-bucket=S3_BUCKET", "*S3 Bucket on AWS to which to copy the output and artifacts") do |s3|
+      opts.on("-bS3_BUCKET", "--s3-bucket=S3_BUCKET", "S3 Bucket on AWS to which to copy the output and artifacts") do |s3|
         options[:s3_bucket] = s3
       end
 
@@ -62,8 +62,8 @@ class SqsCi
       end
     end.parse!
 
-    unless options[:h] || [:q, :s3_bucket, :region, :command].all? {|s| options.key? s}
-      raise OptionParser::MissingArgument, "Arguments -q, -s, -r, and -c are required. -h for help."
+    unless options[:h] || [:q, :region, :command].all? {|s| options.key? s}
+      raise OptionParser::MissingArgument, "Arguments -q, -r, and -c are required. -h for help."
     end
     self.q, self.s3_bucket, self.region, self.command, self.user = options.values_at(:q, :s3_bucket, :region, :command, :user)
   end
@@ -84,6 +84,15 @@ class SqsCi
     commit_ref = message['head_commit']['id']
     puts "commit_ref: #{commit_ref}"
 
+    run_command(project, full_name, commit_ref, command)
+  rescue => e
+    puts "Message not processed. #{e}"
+  else
+    puts "Message processed."
+  end
+
+  def self.run_command(project, full_name, commit_ref, command)
+
     # set status
     create_status(full_name, commit_ref, 'pending',
                   :description => "Starting at #{Time.now}.",
@@ -97,29 +106,20 @@ class SqsCi
     secs = '%.2f' % (secs % 60)
     time_str = "#{mins}m#{secs}s"
      
-    save_logs(project, commit_ref, output, "#{project}/log")
+    save_logs(commit_ref, output, "#{project}/log")
 
     # update status
-    if status.success?
-      create_status(full_name, commit_ref,
-                    'success',
-                    :description => "Finished successfully in #{time_str} at #{Time.now}.",
-                    :context => command,
-                    :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
-    else
-      create_status(full_name, commit_ref,
-                    'failure',
-                    :description => "Failed with #{status} in #{time_str} at #{Time.now}.",
-                    :context => command,
-                    :target_url => "https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}")
-    end
-  rescue => e
-    puts "Message not processed. #{e}"
-  else
-    puts "Message processed."
+    result = status.success? ? 'success' : 'failure'
+
+    create_status(full_name, commit_ref,
+                  result,
+                  :description => "#{result} in #{time_str} at #{Time.now}.",
+                  :context => command,
+                  :target_url => ("https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}" if s3_bucket))
   end
 
-  def self.save_logs(project, commit_ref, output, dir)
+  def self.save_logs(commit_ref, output, dir)
+    return unless s3_bucket
     s3 = Aws::S3::Resource.new(region:'us-west-2')
     obj = s3.bucket(s3_bucket).object(commit_ref)
     obj.put(body: output)
