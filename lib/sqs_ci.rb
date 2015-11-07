@@ -5,7 +5,7 @@ require "benchmark"
 
 class SqsCi
   class << self
-    attr_accessor(:q, :s3_bucket, :region, :command, :user)
+    attr_accessor(:q, :s3_bucket, :region, :commands, :user)
   end
 
   def self.github_client
@@ -29,7 +29,7 @@ class SqsCi
   end
 
   def self.config
-    options = {}
+    options = {:commands => []}
     OptionParser.new do |opts|
       opts.banner = "Usage: [ruby] sqs_ci.rb [options] (*required)\n" +
                     "       sqs_ci [options] (*required)\n" +
@@ -47,8 +47,8 @@ class SqsCi
         options[:region] = region
       end
 
-      opts.on("-cCOMMAND", "--command=COMMAND", "*Test Command to run") do |test_command|
-        options[:command] = test_command
+      opts.on("-cCOMMAND", "--command=COMMAND", "*Test Command to run (can have multiple parallel commands, and each command can be arbirariloy complicated)") do |test_command|
+        options[:commands] << test_command
       end
 
       opts.on("-uUSER", "--user=USER", "Only do tests for commits by this GitHub user") do |user|
@@ -62,10 +62,10 @@ class SqsCi
       end
     end.parse!
 
-    unless options[:h] || [:q, :region, :command].all? {|s| options.key? s}
+    unless options[:h] || [:q, :region, :commands].all? {|s| options.key? s}
       raise OptionParser::MissingArgument, "Arguments -q, -r, and -c are required. -h for help."
     end
-    self.q, self.s3_bucket, self.region, self.command, self.user = options.values_at(:q, :s3_bucket, :region, :command, :user)
+    self.q, self.s3_bucket, self.region, self.commands, self.user = options.values_at(:q, :s3_bucket, :region, :commands, :user)
   end
 
   def self.process(msg)
@@ -84,7 +84,14 @@ class SqsCi
     commit_ref = message['head_commit']['id']
     puts "commit_ref: #{commit_ref}"
 
-    run_command(project, full_name, commit_ref, command)
+    commands.each do |command|
+      Process.fork do
+        puts "Starting #{command}"
+        run_command(project, full_name, commit_ref, command)
+        puts "Finished #{command}"
+      end
+    end
+    Process.wait
   rescue => e
     puts "Message not processed. #{e}"
   else
