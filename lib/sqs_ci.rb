@@ -92,6 +92,8 @@ class SqsCi
       end
     end
     Process.wait
+    save_logs(commit_ref, "#{project}/log")
+
   rescue => e
     puts "Message not processed. #{e}"
   else
@@ -104,38 +106,45 @@ class SqsCi
     create_status(full_name, commit_ref, 'pending',
                   :description => "Starting at #{Time.now}.",
                   :context => command)
-    output = ''
     secs = Benchmark.realtime do
-      output = `cd #{project} && git pull && git checkout #{commit_ref} && git pull && #{command}`
+      `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output#{Process.pid}.log`
     end
     status = $?
     mins = secs.to_i / 60
     secs = '%.2f' % (secs % 60)
     time_str = "#{mins}m#{secs}s"
      
-    save_logs(commit_ref, output, "#{project}/log")
-
     # update status
     result = status.success? ? 'success' : 'failure'
+    description = "#{result} in #{time_str} at #{Time.now}."
+
+    url = "https://console.aws.amazon.com/s3/home?region=#{region}#&bucket=#{s3_bucket}&prefix=#{commit_ref}/"
 
     create_status(full_name, commit_ref,
                   result,
-                  :description => "#{result} in #{time_str} at #{Time.now}.",
+                  :description => description,
                   :context => command,
-                  :target_url => ("https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}" if s3_bucket))
+                  :target_url => (url if s3_bucket && url))
+
+    puts "#{command}: #{description}"
   end
 
-  def self.save_logs(commit_ref, output, dir)
+  def self.save_logs(commit_ref, dir)
     return unless s3_bucket
-    s3 = Aws::S3::Resource.new(region:'us-west-2')
-    obj = s3.bucket(s3_bucket).object(commit_ref)
-    obj.put(body: output)
+    s3 = Aws::S3::Resource.new(region: region)
     files = Dir.new dir
+    dir = dir + "/" if dir[-1] != "/"
     files.each do |file|
-      begin
-        obj.upload_file(file)
-      rescue
-        puts "Could not upload #{file}"
+      full_file_name = "#{dir}#{file}"
+      if File.file?(full_file_name)
+        begin
+          obj = s3.bucket(s3_bucket).object("#{commit_ref}/#{file}")
+          obj.upload_file(full_file_name)
+        rescue => e
+          puts "Could not upload #{full_file_name} (#{e})."
+        else
+          puts "Uploaded #{full_file_name}."
+        end
       end
     end
   end
