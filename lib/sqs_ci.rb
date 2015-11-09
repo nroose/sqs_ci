@@ -106,7 +106,7 @@ class SqsCi
                   :context => command)
     output = ''
     secs = Benchmark.realtime do
-      output = `cd #{project} && git pull && git checkout #{commit_ref} && git pull && #{command}`
+      output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && git pull && #{command} >> log/output.log`
     end
     status = $?
     mins = secs.to_i / 60
@@ -131,7 +131,6 @@ class SqsCi
     return unless s3_bucket
     s3 = Aws::S3::Resource.new(region:'us-west-2')
     obj = s3.bucket(s3_bucket).object("#{commit_ref}/output")
-    obj.put(body: output)
     files = Dir.new dir
     dir = dir + "/" if dir[-1] != "/"
     files.each do |file|
