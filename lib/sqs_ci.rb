@@ -108,6 +108,7 @@ class SqsCi
     secs = Benchmark.realtime do
       output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && git pull && #{command} >> log/output.log`
     end
+    puts output
     status = $?
     mins = secs.to_i / 60
     secs = '%.2f' % (secs % 60)
@@ -130,18 +131,19 @@ class SqsCi
   def self.save_logs(commit_ref, output, dir)
     return unless s3_bucket
     s3 = Aws::S3::Resource.new(region:'us-west-2')
-    obj = s3.bucket(s3_bucket).object("#{commit_ref}/output")
     files = Dir.new dir
     dir = dir + "/" if dir[-1] != "/"
     files.each do |file|
       full_file_name = "#{dir}#{file}"
-      begin
-        obj.upload_file(full_file_name)
-      rescue => e
-        puts "Could not upload #{full_file_name} (#{e})"
+      if File.file?(full_file_name)
+        begin
+          obj = s3.bucket(s3_bucket).object("#{commit_ref}/#{file}")
+          obj.upload_file(full_file_name)
+        rescue => e
+          puts "Could not upload #{full_file_name} (#{e})"
+        end
       end
     end
-    obj.public_url
   end
 end
 
