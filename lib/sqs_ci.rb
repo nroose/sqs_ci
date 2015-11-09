@@ -131,11 +131,13 @@ class SqsCi
     obj = s3.bucket(s3_bucket).object("#{commit_ref}/output")
     obj.put(body: output)
     files = Dir.new dir
+    dir = dir + "/" if dir[-1] != "/"
     files.each do |file|
+      full_file_name = "#{dir}#{file}"
       begin
-        obj.upload_file(file)
-      rescue
-        puts "Could not upload #{file}"
+        obj.upload_file(full_file_name)
+      rescue => e
+        puts "Could not upload #{full_file_name} (#{e})"
       end
     end
   end
