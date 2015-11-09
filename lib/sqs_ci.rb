@@ -138,7 +138,9 @@ class SqsCi
           obj = s3.bucket(s3_bucket).object("#{commit_ref}/#{file}")
           obj.upload_file(full_file_name)
         rescue => e
-          puts "Could not upload #{full_file_name} (#{e})"
+          puts "Could not upload #{full_file_name} (#{e})."
+        else
+          puts "Uploaded #{full_file_name}."
         end
       end
     end
