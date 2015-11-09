@@ -92,6 +92,8 @@ class SqsCi
       end
     end
     Process.wait
+    save_logs(commit_ref, "#{project}/log")
+
   rescue => e
     puts "Message not processed. #{e}"
   else
@@ -104,9 +106,8 @@ class SqsCi
     create_status(full_name, commit_ref, 'pending',
                   :description => "Starting at #{Time.now}.",
                   :context => command)
-    output = ''
     secs = Benchmark.realtime do
-      output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output.log`
+      `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output#{Process.pid}.log`
     end
     status = $?
     mins = secs.to_i / 60
@@ -116,8 +117,6 @@ class SqsCi
     # update status
     result = status.success? ? 'success' : 'failure'
     description = "#{result} in #{time_str} at #{Time.now}."
-
-    save_logs(commit_ref, output, "#{project}/log")
 
     url = "https://console.aws.amazon.com/s3/home?region=#{region}#&bucket=#{s3_bucket}&prefix=#{commit_ref}/"
 
@@ -130,7 +129,7 @@ class SqsCi
     puts "#{command}: #{description}"
   end
 
-  def self.save_logs(commit_ref, output, dir)
+  def self.save_logs(commit_ref, dir)
     return unless s3_bucket
     s3 = Aws::S3::Resource.new(region: region)
     files = Dir.new dir
