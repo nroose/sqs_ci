@@ -119,17 +119,20 @@ class SqsCi
 
     save_logs(commit_ref, output, "#{project}/log")
 
+    url = "https://console.aws.amazon.com/s3/home?region=#{region}#&bucket=#{s3_bucket}&prefix=#{commit_ref}/"
+
     create_status(full_name, commit_ref,
                   result,
                   :description => description,
-                  :context => command)
+                  :context => command,
+                  :target_url => (url if s3_bucket && url))
 
     puts "#{command}: #{description}"
   end
 
   def self.save_logs(commit_ref, output, dir)
     return unless s3_bucket
-    s3 = Aws::S3::Resource.new(region:'us-west-2')
+    s3 = Aws::S3::Resource.new(region: region)
     files = Dir.new dir
     dir = dir + "/" if dir[-1] != "/"
     files.each do |file|
