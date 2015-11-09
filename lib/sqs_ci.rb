@@ -108,7 +108,6 @@ class SqsCi
     secs = Benchmark.realtime do
       output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output.log`
     end
-    puts output
     status = $?
     mins = secs.to_i / 60
     secs = '%.2f' % (secs % 60)
@@ -117,6 +116,8 @@ class SqsCi
     # update status
     result = status.success? ? 'success' : 'failure'
     description = "#{result} in #{time_str} at #{Time.now}."
+
+    save_logs(commit_ref, output, "#{project}/log")
 
     create_status(full_name, commit_ref,
                   result,
