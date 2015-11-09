@@ -128,7 +128,7 @@ class SqsCi
   def self.save_logs(commit_ref, output, dir)
     return unless s3_bucket
     s3 = Aws::S3::Resource.new(region:'us-west-2')
-    obj = s3.bucket(s3_bucket).object(commit_ref)
+    obj = s3.bucket(s3_bucket).object("#{commit_ref}/output")
     obj.put(body: output)
     files = Dir.new dir
     files.each do |file|
