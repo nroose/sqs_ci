@@ -114,8 +114,6 @@ class SqsCi
     secs = '%.2f' % (secs % 60)
     time_str = "#{mins}m#{secs}s"
      
-    url = save_logs(commit_ref, output, "#{project}/log")
-
     # update status
     result = status.success? ? 'success' : 'failure'
     description = "#{result} in #{time_str} at #{Time.now}."
@@ -123,8 +121,8 @@ class SqsCi
     create_status(full_name, commit_ref,
                   result,
                   :description => description,
-                  :context => command,
-                  :target_url => (url if s3_bucket))
+                  :context => command)
+
     puts "#{command}: #{description}"
   end
 
