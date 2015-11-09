@@ -119,7 +119,7 @@ class SqsCi
     secs = Benchmark.realtime do
       `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output#{Process.pid}.log`
     end
-    status = $CHILD_STATUS
+    status = $?
     mins = secs.to_i / 60
     secs = '%.2f' % (secs % 60)
     time_str = "#{mins}m#{secs}s"
