@@ -106,7 +106,7 @@ class SqsCi
                   :context => command)
     output = ''
     secs = Benchmark.realtime do
-      output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && git pull && #{command} >> log/output.log`
+      output = `cd #{project} && git pull && git checkout #{commit_ref} &> /dev/null && #{command} >> log/output.log`
     end
     puts output
     status = $?
