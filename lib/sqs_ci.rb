@@ -113,16 +113,18 @@ class SqsCi
     secs = '%.2f' % (secs % 60)
     time_str = "#{mins}m#{secs}s"
      
-    save_logs(commit_ref, output, "#{project}/log")
+    url = save_logs(commit_ref, output, "#{project}/log")
 
     # update status
     result = status.success? ? 'success' : 'failure'
+    description = "#{result} in #{time_str} at #{Time.now}."
 
     create_status(full_name, commit_ref,
                   result,
-                  :description => "#{result} in #{time_str} at #{Time.now}.",
+                  :description => description,
                   :context => command,
-                  :target_url => ("https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}" if s3_bucket))
+                  :target_url => (url if s3_bucket))
+    puts "#{command}: #{description}"
   end
 
   def self.save_logs(commit_ref, output, dir)
@@ -140,6 +142,7 @@ class SqsCi
         puts "Could not upload #{full_file_name} (#{e})"
       end
     end
+    obj.public_url
   end
 end
 
