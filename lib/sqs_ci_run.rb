@@ -27,7 +27,7 @@ module SqsCiRun
   end
 
   def run_commands(project, full_name, commit_ref, commands)
-    `cd #{project} && git fetch && git checkout #{commit_ref}`
+    `cd #{project} && git fetch > /dev/null && git checkout #{commit_ref} > /dev/null`
     commands.each do |command|
       Process.fork do
         puts "Starting #{command}"
@@ -36,7 +36,7 @@ module SqsCiRun
       end
     end
     Process.wait
-    `git checkout -`
+    `git checkout - > /dev/null`
   end
 
   def run
