@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 
-require 'sqs_ci'
-SqsCi.poll(ARGV)
+require_relative './../lib/sqs_ci'
+SqsCi.poll

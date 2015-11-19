@@ -1,13 +1,14 @@
 Gem::Specification.new do |s|
   s.name        = 'sqs_ci'
-  s.version     = '0.0.5'
+  s.version     = '0.0.6'
   s.date        = '2015-10-31'
   s.summary     = 'Github sns hook-based ci system.'
   s.description = 'Takes github messages from sqs to run tests on rails projects.'
   s.authors     = ['Nick Roosevelt']
   s.email       = 'nroose@gmail.com'
-  s.files       = ['lib/sqs_ci.rb']
+  s.files       = ['lib/sqs_ci.rb', 'lib/sqs_ci.rb', 'lib/sqs_ci_config.rb', 'lib/sqs_ci_github.rb', 'lib/sqs_ci_run.rb', ]
   s.executables << 'sqs_ci'
+  s.executables << 'run_ci'
   s.homepage    =
     'http://github.com/nroose/sqs_ci'
   s.license       = 'GPL'
