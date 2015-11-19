@@ -6,7 +6,7 @@ module SqsCiRun
                     :context => command)
       output = ''
       secs = Benchmark.realtime do
-        output = `cd #{project} && git fetch && git checkout #{commit_ref} && #{command} && git checkout -`
+        output = `cd #{project} && #{command} && git checkout -`
       end
       status = $?
       mins = secs.to_i / 60
@@ -27,6 +27,7 @@ module SqsCiRun
   end
 
   def run_commands(project, full_name, commit_ref, commands)
+    `cd #{project} && git fetch && git checkout #{commit_ref}`
     commands.each do |command|
       Process.fork do
         puts "Starting #{command}"
@@ -35,6 +36,7 @@ module SqsCiRun
       end
     end
     Process.wait
+    `git checkout -`
   end
 
   def run
