@@ -2,6 +2,11 @@ module SqsCiRun
   def run_command(project, full_name, commit_ref, command_list)
     command_list.split("&&").each do |command|
       create_status(full_name, commit_ref, 'pending',
+                    :description => "Pending at #{Time.now}.",
+                    :context => command)
+    end
+    command_list.split("&&").each do |command|
+      create_status(full_name, commit_ref, 'pending',
                     :description => "Starting at #{Time.now}.",
                     :context => command)
       output = ''

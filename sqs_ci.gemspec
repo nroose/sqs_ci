@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.description = 'Takes github messages from sqs to run tests on rails projects.'
   s.authors     = ['Nick Roosevelt']
   s.email       = 'nroose@gmail.com'
-  s.files       = ['lib/sqs_ci.rb', 'lib/sqs_ci.rb', 'lib/sqs_ci_config.rb', 'lib/sqs_ci_github.rb', 'lib/sqs_ci_run.rb', ]
+  s.files       = ['lib/sqs_ci.rb', 'lib/sqs_ci_config.rb', 'lib/sqs_ci_github.rb', 'lib/sqs_ci_run.rb', 'lib/sqs_ci_s3.rb']
   s.executables << 'sqs_ci'
   s.executables << 'run_ci'
   s.homepage    =
