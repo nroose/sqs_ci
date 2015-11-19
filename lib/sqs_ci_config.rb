@@ -19,7 +19,8 @@ module SqsCiConfig
       end
 
       opts.on("-ccommand", "--command=command",
-              "*test command to run (can have multiple parallel commands, and each command can be arbirariloy complicated)") do |test_command|
+              "*test command to run (can have multiple parallel commands by using multiple -c options, and each command can be arbirarily complicated - " +
+              "if you separate the commands in one -c option with '&&' they will be run sequentially but tracked independently)") do |test_command|
         options[:commands] << test_command
       end
 
