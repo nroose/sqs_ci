@@ -10,7 +10,7 @@ module SqsCiRun
       end
       status = $?
       mins = secs.to_i / 60
-      secs = '%.2f' % (secs % 60)
+      secs = '%.0f' % (secs % 60)
       time_str = "#{mins}m#{secs}s"
 
       save_logs(commit_ref, output, "#{project}/log")
@@ -28,7 +28,9 @@ module SqsCiRun
   end
 
   def run_commands(project, full_name, commit_ref, commands)
-    `cd #{project} && git stash save -u > /dev/null 2>&1 && git fetch > /dev/null 2>&1 && git checkout #{commit_ref} > /dev/null 2>&1`
+    output = `cd #{project} 2>&1 && git fetch 2>&1 && git checkout #{commit_ref} 2>&1`
+    status = $?
+    fail "Failed to check out project:\n#{output}" unless status.success?
     commands.each do |command|
       Process.fork do
         run_command(project, full_name, commit_ref, command)
@@ -38,7 +40,7 @@ module SqsCiRun
     STDOUT.flush
     Process.waitall
     puts ""
-    `git checkout - > /dev/null 2>&1 && git stash pop > /dev/null 2>&1`
+    `git checkout - > /dev/null 2>&1`
   end
 
   def run
