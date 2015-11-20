@@ -9,16 +9,13 @@ module SqsCiRun
       create_status(full_name, commit_ref, 'pending',
                     :description => "Starting at #{Time.now}.",
                     :context => command)
-      output = ''
       secs = Benchmark.realtime do
-        output = `cd #{project} && #{command} 2>&1`
+        `cd #{project} && #{command} >> log/output.log 2>&1`
       end
       status = $?
       mins = secs.to_i / 60
       secs = '%.0f' % (secs % 60)
       time_str = "#{mins}m#{secs}s"
-
-      save_logs(commit_ref, output, "#{project}/log")
 
       # update status
       result = status.success? ? 'success' : 'failure'
@@ -36,6 +33,7 @@ module SqsCiRun
     output = `cd #{project} 2>&1 && git fetch 2>&1 && git checkout #{commit_ref} 2>&1`
     status = $?
     fail "Failed to check out project:\n#{output}" unless status.success?
+    `cd #{project} 2>&1 && rm -rf log/*` if delete_logs?
     commands.each do |command|
       Process.fork do
         run_command(project, full_name, commit_ref, command)
@@ -45,6 +43,7 @@ module SqsCiRun
     STDOUT.flush
     Process.waitall
     puts ""
+    save_logs(commit_ref, "#{project}/log")
     `git checkout - > /dev/null 2>&1`
   end
 

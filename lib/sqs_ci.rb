@@ -14,7 +14,11 @@ class SqsCi
   extend SqsCiS3
 
   class << self
-    attr_accessor(:q, :s3_bucket, :region, :commands, :user, :project, :full_name, :commit_ref)
+    attr_accessor(:q, :s3_bucket, :region, :commands, :user, :project, :full_name, :commit_ref, :delete_logs)
+  end
+
+  def self.delete_logs?
+    delete_logs
   end
 
   def self.poll
