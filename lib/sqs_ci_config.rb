@@ -36,6 +36,10 @@ module SqsCiConfig
         options[:commit_ref] = commit_ref
       end
 
+      opts.on("-x", "--clean-logs", "Delete logs before running.") do
+        options[:delete_logs] = true
+      end
+
       opts.on("-h", "--help", "prints this help") do
         options[:h] = "h"
         puts opts
@@ -47,8 +51,8 @@ module SqsCiConfig
       raise OptionParser::MissingArgument, "argument -c and either -f and -g or -q and -r are required. -h for more help."
     end
     self.q, self.s3_bucket, self.region, self.commands,
-    self.user, self.full_name, self.commit_ref =
-                               options.values_at(:q, :s3_bucket, :region, :commands,
-                                                 :user, :full_name, :commit_ref)
+    self.user, self.full_name, self.commit_ref, self.delete_logs =
+                               options.values_at(:q, :s3_bucket, :region, :commands, :user,
+                                                 :full_name, :commit_ref, :delete_logs)
   end
 end
