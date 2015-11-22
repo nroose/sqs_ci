@@ -10,20 +10,26 @@ module SqsCiRun
                     :description => "Starting at #{Time.now}.",
                     :context => command)
       secs = Benchmark.realtime do
-        `cd #{project} && #{command} >> log/output.log 2>&1`
+        output = `cd #{project} && #{command} 2>&1 | tee log/output.log`
       end
       status = $?
       mins = secs.to_i / 60
       secs = '%.0f' % (secs % 60)
       time_str = "#{mins}m#{secs}s"
+      description = "#{result} in #{time_str} at #{Time.now}.",
 
       # update status
       result = status.success? ? 'success' : 'failure'
-      print result[0]
+      if verbose
+        puts status
+        puts output
+      else
+        print result[0]
+      end
 
       create_status(full_name, commit_ref,
                     result,
-                    :description => "#{result} in #{time_str} at #{Time.now}.",
+                    :description => description
                     :context => command,
                     :target_url => ("https://s3-#{region}.amazonaws.com/#{s3_bucket}/#{commit_ref}" if s3_bucket))
     end
