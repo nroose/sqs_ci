@@ -37,9 +37,8 @@ module SqsCiGithub
     end
   end
 
-  def end_status(full_name, commit_ref, result, description)
-    result = result.success? ? 'success' : 'failure'
-
+  def end_status(full_name, commit_ref, result, secs, command)
+    description = "#{result} in #{time_str(secs)} at #{Time.now}."
     log_status(result, description)
     create_status(full_name, commit_ref, result,
                   description: description,

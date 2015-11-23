@@ -1,16 +1,14 @@
 # Module to run test commands
 module SqsCiRun
-  def run_command(project, full_name, commit_ref, command_list)
-    commands = command_list.split('&&')
-    set_initial_pending_statuses(commands, full_name, commit_ref)
-
-    commands.each do |command|
+  def run_command(project, full_name, commit_ref, command_array)
+    command_array.each do |command|
       start_status(full_name, commit_ref, command)
       secs = Benchmark.realtime do
-        `cd #{project} && #{command} 2>&1 log/output.log`
+        output = `cd #{project} && #{command} 2>&1 | tee log/output.log`
+        puts output if verbose
       end
-      description = "#{result} in #{time_str(secs)} at #{Time.now}."
-      end_status(full_name, commit_ref, $CHILD_STATUS, description)
+      result = $CHILD_STATUS.success? ? 'success' : 'failure'
+      end_status(full_name, commit_ref, result, secs, command)
     end
   end
 
@@ -23,21 +21,23 @@ module SqsCiRun
   end
 
   def run_commands(project, full_name, commit_ref, commands)
-    prepare_project(project, commit_ref)
     commands.each do |command|
       Process.fork do
-        run_command(project, full_name, commit_ref, command)
+        command_array = command.split('&&')
+        set_initial_pending_statuses(command_array, full_name, commit_ref)
+        run_command(project, full_name, commit_ref, command_array)
         STDOUT.flush
       end
     end
     Process.waitall
-    save_logs(commit_ref, "#{project}/log")
-    `git checkout - > /dev/null 2>&1`
   end
 
   def run
     config
     project = full_name.split('/').last
+    prepare_project(project, commit_ref)
     run_commands(project, full_name, commit_ref, commands)
+    save_logs(commit_ref, "#{project}/log")
+    `git checkout - > /dev/null 2>&1`
   end
 end

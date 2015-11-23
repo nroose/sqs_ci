@@ -61,14 +61,15 @@ module SqsCiConfig
   end
 
   def check_options(options)
-    if options[:h] ||
-           [:q, :region, :commands].all? { |s| options.key? s } ||
-           [:full_name, :commit_ref, :commands].all? { |s| options.key? s }
-      return
+    case
+    when options[:h]
+    when [:q, :r, :commands].all? { |s| options.key? s }
+    when [:f, :g, :commands].all? { |s| options.key? s }
+    else
+      fail OptionParser::MissingArgument,
+           'argument -c and either -f and -g or -q and -r are required. ' \
+           "'-h for more help. options: #{options.inspect}"
     end
-    fail OptionParser::MissingArgument,
-         'argument -c and either -f and -g or -q and -r are required. ' \
-         '-h for more help.'
   end
 
   def config
@@ -78,8 +79,7 @@ module SqsCiConfig
 
     self.q, self.s3_bucket, self.region, self.commands, self.user,
     self.full_name, self.commit_ref, self.delete_logs,
-    self.verbose = options.values_at(:q, :s3_bucket, :region, :commands, :user,
-                                     :full_name, :commit_ref, :delete_logs,
-                                     :verbose)
+    self.verbose = options.values_at(:q, :s, :r, :commands, :u,
+                                     :f, :g, :x, :v)
   end
 end
