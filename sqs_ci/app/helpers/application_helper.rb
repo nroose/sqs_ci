@@ -1,2 +1,3 @@
+# This is the missing top level documentation comment...
 module ApplicationHelper
 end
