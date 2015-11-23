@@ -1,11 +1,12 @@
 # Module to run test commands
 module SqsCiRun
   def run_command(project, full_name, commit_ref, command_array)
-    command_array.each do |command|
+    command_array.each_with_index do |command, index|
       start_status(full_name, commit_ref, command)
       secs = Benchmark.realtime do
-        output = `cd #{project} && #{command} 2>&1 | tee log/output.log`
-        puts output if verbose
+        pid = Process.pid
+        `cd #{project} && echo #{command} > log/output_#{pid}_#{index}.log`
+        `cd #{project} && #{command} 2>&1 >> log/output_#{pid}_#{index}.log`
       end
       result = $CHILD_STATUS.success? ? 'success' : 'failure'
       end_status(full_name, commit_ref, result, secs, command)
