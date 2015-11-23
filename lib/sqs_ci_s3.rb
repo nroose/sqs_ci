@@ -1,9 +1,16 @@
+# Module to send files to s3.
 module SqsCiS3
   def save_logs(commit_ref, dir)
+    STDOUT.flush
+    puts ''
     return unless s3_bucket
-    s3 = Aws::S3::Resource.new(region:'us-west-2')
+    s3 = Aws::S3::Resource.new(region: 'us-west-2')
     obj = s3.bucket(s3_bucket).object(commit_ref)
     files = Dir.new dir
+    upload_files(files, obj)
+  end
+
+  def upload_files(files, obj)
     files.each do |file|
       begin
         obj.upload_file(file)
