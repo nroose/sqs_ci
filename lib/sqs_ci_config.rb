@@ -1,7 +1,7 @@
 # Configuration module
 # - reads the command line options and sets corresponding variables
 module SqsCiConfig
-  OPTIONS_ARRAY =
+  OPTION_ARRAY =
     [
       ['-qqueue', '--queue=queue', '**queue from github'],
       ['-bs3_bucket', '--s3-bucket=s3_bucket',
@@ -49,8 +49,8 @@ module SqsCiConfig
   def parse_options
     options = { commands: [] }
     OptionParser.new do |opts|
-      opts.banner = 'Usage: sqs_ci [options] (* and ** are required)\n' \
-                    '       run_ci [options] (* and *** are required)\n' \
+      opts.banner = "Usage: sqs_ci [options] (* and ** are required)\n" \
+                    "       run_ci [options] (* and *** are required)\n" \
                     'uses sqs messages from github to run tests.'
 
       parse_option_array(opts, options)
@@ -60,8 +60,8 @@ module SqsCiConfig
     options
   end
 
-  def check_options
-    unless options[:h] ||
+  def check_options(options)
+    if options[:h] ||
            [:q, :region, :commands].all? { |s| options.key? s } ||
            [:full_name, :commit_ref, :commands].all? { |s| options.key? s }
       return
@@ -73,6 +73,8 @@ module SqsCiConfig
 
   def config
     options = parse_options
+
+    check_options(options)
 
     self.q, self.s3_bucket, self.region, self.commands, self.user,
     self.full_name, self.commit_ref, self.delete_logs,
