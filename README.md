@@ -13,3 +13,5 @@ This will run tests and update the github status for a commit.
 sqs_ci
 ------
 If you can get your permissions to work on aws sqs, you are a better man than I am.  Then you need to set up your github repo to send notifications to that queue, through an SNS topic.  Then it will listen for messages and run the tests on the commits.
+
+Don't do any checkouts or run anything else while the tests are running...
