@@ -25,21 +25,22 @@ module SqsCiGithub
 
   def time_str(secs)
     mins = secs.to_i / 60
-    secs = (secs % 60).round
+    secs = (secs.to_i % 60).round
     "#{mins}m#{secs}s"
   end
 
-  def log_status(result, description)
+  def log_status(command, result, description)
     if verbose
-      puts description
+      puts "#{command}: #{result}\n  #{description}"
     else
       print result[0]
     end
   end
 
   def end_status(full_name, commit_ref, result, secs, command)
-    description = "#{result} in #{time_str(secs)} at #{Time.now}."
-    log_status(result, description)
+    description = "#{time_str(secs)} at #{Time.now}"
+    result ||= 'error'
+    log_status(command, result, description)
     create_status(full_name, commit_ref, result,
                   description: description,
                   context: command,

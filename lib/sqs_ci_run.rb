@@ -1,15 +1,25 @@
 # Module to run test commands
 module SqsCiRun
-  def run_command(project, full_name, commit_ref, command_array)
-    command_array.each_with_index do |command, index|
-      start_status(full_name, commit_ref, command)
-      secs = Benchmark.realtime do
-        pid = Process.pid
-        `cd #{project} && echo #{command} > log/output_#{pid}_#{index}.log`
-        `cd #{project} && #{command} 2>&1 >> log/output_#{pid}_#{index}.log`
-      end
-      result = $CHILD_STATUS.success? ? 'success' : 'failure'
-      end_status(full_name, commit_ref, result, secs, command)
+  def sanitize_filename(filename)
+    filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.\-]/, '_')
+  end
+
+  def run_command(project, full_name, commit_ref, command)
+    start_status(full_name, commit_ref, command)
+    secs = Benchmark.realtime do
+      log_file = "log/output_#{Process.pid}_#{sanitize_filename(command)}.log"
+      `cd #{project} && #{command} 2>&1 >> #{log_file}`
+    end
+    result = $CHILD_STATUS.success? ? 'success' : 'failure'
+  rescue => e
+    puts e
+  ensure
+    end_status(full_name, commit_ref, result, secs, command)
+  end
+
+  def run_command_array(project, full_name, commit_ref, command_array)
+    command_array.each do |command|
+      run_command(project, full_name, commit_ref, command)
     end
   end
 
@@ -28,7 +38,7 @@ module SqsCiRun
       Process.fork do
         command_array = command.split('&&')
         set_initial_pending_statuses(command_array, full_name, commit_ref)
-        run_command(project, full_name, commit_ref, command_array)
+        run_command_array(project, full_name, commit_ref, command_array)
         STDOUT.flush
       end
     end
@@ -41,6 +51,9 @@ module SqsCiRun
     prepare_project(project, commit_ref)
     run_commands(project, full_name, commit_ref, commands)
     save_logs(commit_ref, "#{project}/log")
+  rescue => e
+    puts e
+  ensure
     `cd #{project} 2>&1 && git checkout - > /dev/null 2>&1`
   end
 end
