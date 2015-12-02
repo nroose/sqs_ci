@@ -17,7 +17,8 @@ class SqsCi
 
   class << self
     attr_accessor(:q, :s3_bucket, :region, :commands, :user, :project,
-                  :full_name, :commit_ref, :delete_logs, :verbose)
+                  :full_name, :commit_ref, :delete_logs, :verbose,
+                  :github_state, :github_description)
   end
 
   def self.delete_logs?

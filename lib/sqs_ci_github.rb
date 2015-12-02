@@ -6,6 +6,7 @@ module SqsCiGithub
   end
 
   def create_status(repo, sha, state, *optional_params)
+    puts [repo, sha, state, *optional_params].inspect if verbose
     github_client.create_status(repo, sha, state, *optional_params)
   end
 
@@ -46,5 +47,14 @@ module SqsCiGithub
                   context: command,
                   target_url: ("https://s3-#{region}.amazonaws.com/" \
                                "#{s3_bucket}/#{commit_ref}" if s3_bucket))
+  end
+
+  def set_status
+    config
+    commands.each do |command|
+      create_status(full_name, commit_ref, github_state,
+                    description: github_description,
+                    context: command)
+    end
   end
 end

@@ -4,11 +4,35 @@ module SqsCiRun
     filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.\-]/, '_')
   end
 
+  def fork_status_updater(full_name, commit_ref, command, progress_file)
+    Process.fork do
+      progress = IO.read(progress_file)
+      create_status(full_name, commit_ref, "pending",
+                    description: "#{progress.count('.')} passed, " \
+                                 "#{progress.count('F')} failed, " \
+                                 "#{progress.count('*')} pending, " \
+                                 "#{progress.count('U')} undefined, " \
+                                 "#{progress.count('-')} skipped so far.",
+                    context: command)
+    end
+  end
+
+  def run_command_detail(project, full_name, commit_ref, command)
+    log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
+    output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
+    if command == 'cucumber' || command == 'rspec'
+      log = "log/progress_#{log_suffix}"
+      extra_opts = " -f progress --out #{log} -f #{output_format[command]}"
+      updater_pid = fork_status_updater(full_name, commit_ref, command, log)
+    end
+    `cd #{project} && #{command} #{extra_opts} 2>&1 >> log/output_#{log_suffix}`
+    Process.kill(updater_pid) if updater_pid
+  end
+
   def run_command(project, full_name, commit_ref, command)
     start_status(full_name, commit_ref, command)
     secs = Benchmark.realtime do
-      log_file = "log/output_#{Process.pid}_#{sanitize_filename(command)}.log"
-      `cd #{project} && #{command} 2>&1 >> #{log_file}`
+      run_command_detail(project, full_name, commit_ref, command)
     end
     result = $CHILD_STATUS.success? ? 'success' : 'failure'
   rescue => e

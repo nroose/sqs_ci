@@ -3,20 +3,24 @@
 module SqsCiConfig
   OPTION_ARRAY =
     [
-      ['-qqueue', '--queue=queue', '**queue from github'],
+      ['-qqueue', '--queue=queue', '** Queue from github'],
       ['-bs3_bucket', '--s3-bucket=s3_bucket',
-       's3 bucket on aws for the output and artifacts'],
+       'S3 bucket on aws for the output and artifacts'],
       ['-rregion', '--region=region',
-       '**aws region for queue and s3'],
+       '** AWS region for queue and s3'],
       ['-uuser', '--user=user',
-       'only do tests for commits by this github user'],
+       'Only do tests for commits by this github user'],
       ['-ffull_name', '--full-name=full_name',
-       '***project full name, like "nroose/sqs_ci".'],
+       '*** **** Project full name, like "nroose/sqs_ci".'],
       ['-gcommit_ref', '--commit-ref=commit_ref',
-       '***run tests on this commit ref, or ' \
-       'branch name.'],
+       '*** **** Run tests on this commit ref'],
+      ['-ystate', '--github-state=state',
+       '**** The state to set for set_github_status - Can be one of ' \
+       'pending, success, error, or failure.'],
+      ['-zdescription', '--github-description=description',
+       '**** The description to use for set_github_status.'],
       ['-x', '--clean-logs', 'Delete logs before running.'],
-      ['-v', '--verbose', 'full output.']
+      ['-v', '--verbose', 'Full output.']
     ]
 
   def parse_option_array(opts, options)
@@ -51,6 +55,7 @@ module SqsCiConfig
     OptionParser.new do |opts|
       opts.banner = "Usage: sqs_ci [options] (* and ** are required)\n" \
                     "       run_ci [options] (* and *** are required)\n" \
+                    " set_github_status [options] (* and **** are required)\n" \
                     'uses sqs messages from github to run tests.'
 
       parse_option_array(opts, options)
@@ -78,8 +83,9 @@ module SqsCiConfig
     check_options(options)
 
     self.q, self.s3_bucket, self.region, self.commands, self.user,
-    self.full_name, self.commit_ref, self.delete_logs,
-    self.verbose = options.values_at(:q, :s, :r, :commands, :u,
-                                     :f, :g, :x, :v)
+    self.full_name, self.commit_ref, self.delete_logs, self.verbose,
+    self.github_state,
+    self.github_description = options.values_at(:q, :s, :r, :commands, :u,
+                                                :f, :g, :x, :v, :y, :z)
   end
 end
