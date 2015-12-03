@@ -34,7 +34,8 @@ module SqsCiRun
 
   def fork_status_updater(full_name, commit_ref, command, progress_file)
     puts progress_file if verbose
-    puts File.exist?(progress_file)
+    project = full_name.split('/').last
+    puts File.exist?("#{project}/#{progress_file}")
     Process.fork do
       status_updater(full_name, commit_ref, command, progress_file)
     end
