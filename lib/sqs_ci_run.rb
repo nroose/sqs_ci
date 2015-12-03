@@ -47,6 +47,7 @@ module SqsCiRun
       updater_pid = fork_status_updater(full_name, commit_ref, command, log)
     end
     `cd #{project} && #{command} #{extra_opts} 2>&1 >> log/output_#{log_suffix}`
+    sleep 240
     Process.kill('INT', updater_pid) if updater_pid
   end
 
