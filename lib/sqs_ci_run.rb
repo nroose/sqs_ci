@@ -9,7 +9,7 @@ module SqsCiRun
 
   def create_progress_status(full_name, commit_ref, results, command)
     create_status(full_name, commit_ref,
-                  results[:failed].to_i > 0 ? 'failed' : 'pending',
+                  results[:failed].to_i > 0 ? 'failure' : 'pending',
                   description: "#{results.inspect} so far at #{Time.now}.",
                   context: command)
   end
@@ -33,9 +33,8 @@ module SqsCiRun
   end
 
   def fork_status_updater(full_name, commit_ref, command, progress_file)
-    puts progress_file if verbose
     project = full_name.split('/').last
-    puts File.exist?("#{project}/#{progress_file}")
+    progress_file = "#{project}/#{progress_file}"
     Process.fork do
       status_updater(full_name, commit_ref, command, progress_file)
     end
