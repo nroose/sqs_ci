@@ -33,6 +33,7 @@ module SqsCiRun
   end
 
   def fork_status_updater(full_name, commit_ref, command, progress_file)
+    puts progress_file if verbose
     Process.fork do
       status_updater(full_name, commit_ref, command, progress_file)
     end
