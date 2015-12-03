@@ -1,19 +1,40 @@
 # Module to run test commands
 module SqsCiRun
+  STATUS_CHARACTERS = { passed: '.', failed: 'F', pending: '*', undefined: 'U',
+                        skipped: '-' }
+
   def sanitize_filename(filename)
     filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.\-]/, '_')
   end
 
+  def create_progress_status(full_name, commit_ref, results, command)
+    create_status(full_name, commit_ref,
+                  results[:failed].to_i > 0 ? 'failed' : 'pending',
+                  description: "#{results.inspect} so far at #{Time.now}.",
+                  context: command)
+  end
+
+  def progress_summary(progress)
+    Hash[STATUS_CHARACTERS.map { |r, c| [r, progress.count(c)] }]
+      .delete_if { |_r, c| c == 0 }
+  end
+
+  def status_updater(full_name, commit_ref, command, progress_file)
+    loop do
+      begin
+        progress = File.exist?(progress_file) ? IO.read(progress_file) : ''
+        results = progress_summary(progress)
+        create_progress_status(full_name, commit_ref, results, command)
+        sleep 60
+      rescue SignalException
+        break
+      end
+    end
+  end
+
   def fork_status_updater(full_name, commit_ref, command, progress_file)
     Process.fork do
-      progress = IO.read(progress_file)
-      create_status(full_name, commit_ref, "pending",
-                    description: "#{progress.count('.')} passed, " \
-                                 "#{progress.count('F')} failed, " \
-                                 "#{progress.count('*')} pending, " \
-                                 "#{progress.count('U')} undefined, " \
-                                 "#{progress.count('-')} skipped so far.",
-                    context: command)
+      status_updater(full_name, commit_ref, command, progress_file)
     end
   end
 
@@ -26,7 +47,7 @@ module SqsCiRun
       updater_pid = fork_status_updater(full_name, commit_ref, command, log)
     end
     `cd #{project} && #{command} #{extra_opts} 2>&1 >> log/output_#{log_suffix}`
-    Process.kill(updater_pid) if updater_pid
+    Process.kill('INT', updater_pid) if updater_pid
   end
 
   def run_command(project, full_name, commit_ref, command)
@@ -37,6 +58,7 @@ module SqsCiRun
     result = $CHILD_STATUS.success? ? 'success' : 'failure'
   rescue => e
     puts e
+    puts e.backtrace.join "\n" if verbose
   ensure
     end_status(full_name, commit_ref, result, secs, command)
   end
