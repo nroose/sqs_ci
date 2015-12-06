@@ -40,15 +40,22 @@ module SqsCiRun
     end
   end
 
-  def run_command_detail(project, full_name, commit_ref, command)
-    log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
-    output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
-    if command == 'cucumber' || command == 'rspec'
+  def enhance_command(command, log_suffix, full_name, commit_ref)
+    if command =~ /^(cucumber|rspec)/
       log = "log/progress_#{log_suffix}"
+      output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
       extra_opts = " -f progress --out #{log} -f #{output_format[command]}"
+      command.sub(/(cucumber|rspec)/, '\1 ' + extra_opts)
       updater_pid = fork_status_updater(full_name, commit_ref, command, log)
     end
-    `cd #{project} && #{command} #{extra_opts} 2>&1 >> log/output_#{log_suffix}`
+    [command, updater_pid]
+  end
+
+  def run_command_detail(project, full_name, commit_ref, command)
+    log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
+    command, updater_pid = enhance_command(command, log_suffix, full_name,
+                                           commit_ref)
+    `cd #{project} && #{command} 2>&1 >> log/output_#{log_suffix}`
     sleep 240
     Process.kill('INT', updater_pid) if updater_pid
   end
