@@ -4,7 +4,7 @@ module SqsCiRun
                         skipped: '-' }
 
   def sanitize_filename(filename)
-    filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.\-]/, '_')
+    filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.]/, '_')
   end
 
   def create_progress_status(full_name, commit_ref, results, command)
@@ -41,11 +41,12 @@ module SqsCiRun
   end
 
   def enhance_command(command, log_suffix, full_name, commit_ref)
-    if command =~ /^(cucumber|rspec)/
+    type = command[/(cucumber|rspec)/]
+    if type
       log = "log/progress_#{log_suffix}"
       output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
-      extra_opts = " -f progress --out #{log} -f #{output_format[command]}"
-      command.sub(/(cucumber|rspec)/, '\1 ' + extra_opts)
+      extra_opts = " -f progress --out #{log} -f #{output_format[type]}"
+      command.sub!(/(cucumber|rspec)/, '\1 ' + extra_opts)
       updater_pid = fork_status_updater(full_name, commit_ref, command, log)
     end
     [command, updater_pid]
@@ -56,7 +57,6 @@ module SqsCiRun
     command, updater_pid = enhance_command(command, log_suffix, full_name,
                                            commit_ref)
     `cd #{project} && #{command} 2>&1 >> log/output_#{log_suffix}`
-    sleep 240
     Process.kill('INT', updater_pid) if updater_pid
   end
 
