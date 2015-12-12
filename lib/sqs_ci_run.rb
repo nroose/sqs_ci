@@ -46,10 +46,10 @@ module SqsCiRun
       log = "log/progress_#{log_suffix}"
       output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
       extra_opts = " -f progress --out #{log} -f #{output_format[type]}"
-      command.sub!(/(cucumber|rspec)/, '\1 ' + extra_opts)
+      enhanced_command = command.sub(/(cucumber|rspec)/, '\1 ' + extra_opts)
       updater_pid = fork_status_updater(full_name, commit_ref, command, log)
     end
-    [command, updater_pid]
+    [enhanced_command, updater_pid]
   end
 
   def run_command_detail(project, full_name, commit_ref, command)
