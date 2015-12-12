@@ -10,7 +10,7 @@ module SqsCiRun
   def create_progress_status(full_name, commit_ref, results, command)
     create_status(full_name, commit_ref,
                   results[:failed].to_i > 0 ? 'failure' : 'pending',
-                  description: "#{results.inspect} so far at #{Time.now}.",
+                  description: "#{results.inspect} so far at #{Time.now.strftime('%l:%M %P %Z')}.",
                   context: command)
   end
 
@@ -54,9 +54,9 @@ module SqsCiRun
 
   def run_command_detail(project, full_name, commit_ref, command)
     log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
-    command, updater_pid = enhance_command(command, log_suffix, full_name,
-                                           commit_ref)
-    `cd #{project} && #{command} 2>&1 >> log/output_#{log_suffix}`
+    enhanced_command, updater_pid = enhance_command(command, log_suffix, full_name,
+                                                    commit_ref)
+    `cd #{project} && #{enhanced_command} 2>&1 >> log/output_#{log_suffix}`
     Process.kill('INT', updater_pid) if updater_pid
   end
 

@@ -13,14 +13,14 @@ module SqsCiGithub
   def set_initial_pending_statuses(commands, full_name, commit_ref)
     commands.each do |command|
       create_status(full_name, commit_ref, 'pending',
-                    description: "Pending at #{Time.now}.",
+                    description: "Pending at #{Time.now.strftime('%l:%M %P %Z')}.",
                     context: command)
     end
   end
 
   def start_status(full_name, commit_ref, command)
     create_status(full_name, commit_ref, 'pending',
-                  description: "Starting at #{Time.now}.",
+                  description: "Starting at #{Time.now.strftime('%l:%M %P %Z')}.",
                   context: command)
   end
 
@@ -39,7 +39,7 @@ module SqsCiGithub
   end
 
   def end_status(full_name, commit_ref, result, secs, command)
-    description = "#{time_str(secs)} at #{Time.now}"
+    description = "#{time_str(secs)} at #{Time.now.strftime('%l:%M %P %Z')}"
     result ||= 'error'
     log_status(command, result, description)
     create_status(full_name, commit_ref, result,
