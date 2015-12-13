@@ -14,6 +14,10 @@ RSpec.describe "posts/index", type: :view do
     ])
   end
 
+  after(:each) do
+    sleep 30.seconds
+  end
+
   it "renders a list of posts" do
     render
     assert_select "tr>td", :text => "Name".to_s, :count => 2

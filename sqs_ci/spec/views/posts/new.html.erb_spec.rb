@@ -8,6 +8,10 @@ RSpec.describe "posts/new", type: :view do
     ))
   end
 
+  after(:each) do
+    sleep 30.seconds
+  end
+
   it "renders new post form" do
     render
 

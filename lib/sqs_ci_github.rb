@@ -38,8 +38,8 @@ module SqsCiGithub
     end
   end
 
-  def end_status(full_name, commit_ref, result, secs, command)
-    description = "#{time_str(secs)} at #{Time.now.strftime('%l:%M %P %Z')}"
+  def end_status(full_name, commit_ref, result, secs, command, result_summary)
+    description = "#{time_str(secs)} at #{Time.now.strftime('%l:%M %P %Z')}#{result_summary}"
     result ||= 'error'
     log_status(command, result, description)
     create_status(full_name, commit_ref, result,

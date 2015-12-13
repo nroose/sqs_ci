@@ -3,6 +3,10 @@ require "rails_helper"
 RSpec.describe PostsController, type: :routing do
   describe "routing" do
 
+    after(:each) do
+      sleep 30.seconds
+    end
+
     it "routes to #index" do
       expect(:get => "/posts").to route_to("posts#index")
     end

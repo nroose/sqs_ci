@@ -9,8 +9,8 @@ Feature: Check the posts feature
   Scenario: I want to create a post
     Given I go to the posts page
     And I click "New Post"
-    And I set the Name to "First Post"
-    And I set the Body to "This is the body of the first post."
+    And I set the "Name" to "First Post"
+    And I set the "Body" to "This is the body of the first post."
     And I click "Back"
     Then I should see "Post was successfully created"
     And I should see "Name: First Post"

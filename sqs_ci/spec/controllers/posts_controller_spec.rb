@@ -36,6 +36,10 @@ RSpec.describe PostsController, type: :controller do
   # PostsController. Be sure to keep this updated too.
   let(:valid_session) { {} }
 
+  after(:each) do
+    sleep 30.seconds
+  end
+
   describe "GET #index" do
     it "assigns all posts as @posts" do
       post = Post.create! valid_attributes

@@ -40,10 +40,9 @@ module SqsCiRun
     end
   end
 
-  def enhance_command(command, log_suffix, full_name, commit_ref)
+  def enhance_command(command, progress_file, full_name, commit_ref)
     type = command[/(cucumber|rspec)/]
     if type
-      log = "log/progress_#{log_suffix}"
       output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
       extra_opts = " -f progress --out #{log} -f #{output_format[type]}"
       enhanced_command = command.sub(/(cucumber|rspec)/, '\1 ' + extra_opts)
@@ -54,23 +53,27 @@ module SqsCiRun
 
   def run_command_detail(project, full_name, commit_ref, command)
     log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
-    enhanced_command, updater_pid = enhance_command(command, log_suffix, full_name,
+    progress_file = "log/progress_#{log_suffix}"
+    enhanced_command, updater_pid = enhance_command(command, progress_file, full_name,
                                                     commit_ref)
     `cd #{project} && #{enhanced_command} 2>&1 >> log/output_#{log_suffix}`
     Process.kill('INT', updater_pid) if updater_pid
+    progress = File.exist?(progress_file) ? IO.read(progress_file) : ''
+    progress_summary(progress)
   end
 
   def run_command(project, full_name, commit_ref, command)
     start_status(full_name, commit_ref, command)
+    result_summary = ''
     secs = Benchmark.realtime do
-      run_command_detail(project, full_name, commit_ref, command)
+      result_summary = run_command_detail(project, full_name, commit_ref, command)
     end
     result = $CHILD_STATUS.success? ? 'success' : 'failure'
   rescue => e
     puts e
     puts e.backtrace.join "\n" if verbose
   ensure
-    end_status(full_name, commit_ref, result, secs, command)
+    end_status(full_name, commit_ref, result, secs, command, result_summary)
   end
 
   def run_command_array(project, full_name, commit_ref, command_array)

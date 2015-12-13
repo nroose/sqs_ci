@@ -8,6 +8,10 @@ RSpec.describe "posts/edit", type: :view do
     ))
   end
 
+  after(:each) do
+    sleep 30.seconds
+  end
+
   it "renders the edit post form" do
     render
 

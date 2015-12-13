@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe "Posts", type: :request do
+  after(:each) do
+    sleep 30.seconds
+  end
+
   describe "GET /posts" do
     it "works! (now write some real specs)" do
       get posts_path
