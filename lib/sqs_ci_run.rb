@@ -25,7 +25,7 @@ module SqsCiRun
         progress = File.exist?(progress_file) ? IO.read(progress_file) : ''
         results = progress_summary(progress)
         create_progress_status(full_name, commit_ref, results, command)
-        sleep 60
+        sleep 6
       rescue SignalException
         break
       end
@@ -40,7 +40,7 @@ module SqsCiRun
     end
   end
 
-  def enhance_command(command, progress_file, full_name, commit_ref)
+  def enhance_command(command, log, full_name, commit_ref)
     type = command[/(cucumber|rspec)/]
     if type
       output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
