@@ -7,6 +7,22 @@ module SqsCiRun
     filename.strip.gsub(%r{^.*(\|/)}, '').gsub(/[^0-9A-Za-z.]/, '_')
   end
 
+  def log_suffix(command)
+    "#{sanitize_filename(command)}.log"
+  end
+
+  def log_name(command)
+    "log/output_#{log_suffix(command)}"
+  end
+
+  def progress_log(command)
+    "log/progress_#{log_suffix(command)}"
+  end
+
+  def progress_file(project, command)
+    "#{project}/log/progress_#{log_suffix(command)}"
+  end
+
   def create_progress_status(full_name, commit_ref, results, command)
     create_status(full_name, commit_ref,
                   results[:failed].to_i > 0 ? 'failure' : 'pending',
@@ -14,16 +30,17 @@ module SqsCiRun
                   context: command)
   end
 
-  def progress_summary(progress)
+  def progress_summary(project, command)
+    file = progress_file(project, command)
+    progress = File.exist?(file) ? IO.read(file) : ''
     Hash[STATUS_CHARACTERS.map { |r, c| [r, progress.count(c)] }]
       .delete_if { |_r, c| c == 0 }
   end
 
-  def status_updater(full_name, commit_ref, command, progress_file)
+  def status_updater(project, full_name, commit_ref, command)
     loop do
       begin
-        progress = File.exist?(progress_file) ? IO.read(progress_file) : ''
-        results = progress_summary(progress)
+        results = progress_summary(project, command)
         create_progress_status(full_name, commit_ref, results, command)
         sleep 6
       rescue SignalException
@@ -32,48 +49,45 @@ module SqsCiRun
     end
   end
 
-  def fork_status_updater(full_name, commit_ref, command, progress_file)
-    project = full_name.split('/').last
-    progress_file = "#{project}/#{progress_file}"
+  def fork_status_updater(project, full_name, commit_ref, command)
     Process.fork do
-      status_updater(full_name, commit_ref, command, progress_file)
+      status_updater(project, full_name, commit_ref, command)
     end
   end
 
-  def enhance_command(command, log, full_name, commit_ref)
+  def enhance_command(project, command, full_name, commit_ref)
     type = command[/(cucumber|rspec)/]
     if type
       output_format = { 'cucumber' => 'pretty', 'rspec' => 'd' }
-      extra_opts = " -f progress --out #{log} -f #{output_format[type]}"
+      extra_opts = " -f progress --out #{progress_log(command)} -f #{output_format[type]}"
       enhanced_command = command.sub(/(cucumber|rspec)/, '\1 ' + extra_opts)
-      updater_pid = fork_status_updater(full_name, commit_ref, command, log)
+      updater_pid = fork_status_updater(project, full_name, commit_ref, command)
     end
     [enhanced_command, updater_pid]
   end
 
   def run_command_detail(project, full_name, commit_ref, command)
-    log_suffix = "#{sanitize_filename(command)}_#{Process.pid}.log"
-    progress_file = "log/progress_#{log_suffix}"
-    enhanced_command, updater_pid = enhance_command(command, progress_file, full_name,
+    enhanced_command, updater_pid = enhance_command(project, command, full_name,
                                                     commit_ref)
-    `cd #{project} && #{enhanced_command} 2>&1 >> log/output_#{log_suffix}`
+    shell_command = "cd #{project} && #{enhanced_command} 2>&1 >> #{log_name(command)}"
+    puts shell_command if verbose
+    `#{shell_command}`
     Process.kill('INT', updater_pid) if updater_pid
-    progress = File.exist?(progress_file) ? IO.read(progress_file) : ''
-    progress_summary(progress)
+    progress_summary(project, command)
   end
 
   def run_command(project, full_name, commit_ref, command)
     start_status(full_name, commit_ref, command)
-    result_summary = ''
     secs = Benchmark.realtime do
-      result_summary = run_command_detail(project, full_name, commit_ref, command)
+      run_command_detail(project, full_name, commit_ref, command)
     end
     result = $CHILD_STATUS.success? ? 'success' : 'failure'
   rescue => e
     puts e
     puts e.backtrace.join "\n" if verbose
   ensure
-    end_status(full_name, commit_ref, result, secs, command, result_summary)
+    end_status(full_name, commit_ref, result, secs, command,
+               progress_summary(project, command))
   end
 
   def run_command_array(project, full_name, commit_ref, command_array)
