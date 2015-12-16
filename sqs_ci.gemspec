@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'sqs_ci'
-  s.version     = '0.0.15'
-  s.date        = '2015-10-31'
+  s.version     = '0.0.17'
+  s.date        = '2015-12-14'
   s.summary     = 'Github sns hook-based ci system.'
   s.description = 'Takes github messages from sqs to run tests.'
   s.authors     = ['Nick Roosevelt']

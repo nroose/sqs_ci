@@ -42,7 +42,7 @@ module SqsCiRun
       begin
         results = progress_summary(project, command)
         create_progress_status(full_name, commit_ref, results, command)
-        sleep 6
+        sleep 60
       rescue SignalException
         break
       end

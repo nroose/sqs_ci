@@ -11,9 +11,9 @@ module SqsCiConfig
       ['-uuser', '--user=user',
        'Only do tests for commits by this github user'],
       ['-ffull_name', '--full-name=full_name',
-       '*** **** Project full name, like "nroose/sqs_ci".'],
+       'Project full name, like "nroose/sqs_ci" (default will be origin)'],
       ['-gcommit_ref', '--commit-ref=commit_ref',
-       '*** **** Run tests on this commit ref'],
+       'Run tests on this commit ref (default will be current ref)'],
       ['-ystate', '--github-state=state',
        '**** The state to set for set_github_status - Can be one of ' \
        'pending, success, error, or failure.'],
@@ -32,6 +32,7 @@ module SqsCiConfig
   end
 
   def parse_commands_option(opts, options)
+    options[commands] ||= []
     opts.on('-ccommand', '--command=command',
             '*test command to run (can have multiple parallel commands by ' \
             'using multiple -c options, and each command can be arbirarily ' \
@@ -51,7 +52,6 @@ module SqsCiConfig
   end
 
   def parse_options
-    options = { commands: [] }
     OptionParser.new do |opts|
       opts.banner = "Usage: sqs_ci [options] (* and ** are required)\n" \
                     "       run_ci [options] (* and *** are required)\n" \
@@ -69,7 +69,7 @@ module SqsCiConfig
     case
     when options[:h]
     when [:q, :r, :commands].all? { |s| options.key? s }
-    when [:f, :g, :commands].all? { |s| options.key? s }
+    when [:g, :commands].all? { |s| options.key? s }
     else
       fail OptionParser::MissingArgument,
            'argument -c and either -f and -g or -q and -r are required. ' \
@@ -77,15 +77,29 @@ module SqsCiConfig
     end
   end
 
+  def set_defaults
+    if full_name
+      self.project = full_name.split('/').last
+    else
+      fetch = `git remote show origin -n`.lines.find do |line|
+        /^\s*Fetch.*/.match(line)
+      end
+      self.full_name = /^\s*Fetch.*github.com:(.*).git/.match(fetch)[1]
+      self.project = '.'
+    end
+  end
+
+  def options_to_vars(options)
+    self.q, self.s3_bucket, self.region, self.commands, self.user,
+      self.full_name, self.commit_ref, self.delete_logs, self.verbose,
+      self.github_state, self.github_description =
+        options.values_at(:q, :s, :r, :commands, :u, :f, :g, :x, :v, :y, :z)
+  end
+
   def config
     options = parse_options
-
     check_options(options)
-
-    self.q, self.s3_bucket, self.region, self.commands, self.user,
-    self.full_name, self.commit_ref, self.delete_logs, self.verbose,
-    self.github_state,
-    self.github_description = options.values_at(:q, :s, :r, :commands, :u,
-                                                :f, :g, :x, :v, :y, :z)
+    options_to_vars(options)
+    set_defaults
   end
 end
