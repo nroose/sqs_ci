@@ -10,15 +10,15 @@ module SqsCiGithub
     github_client.create_status(repo, sha, state, *optional_params)
   end
 
-  def set_initial_pending_statuses(commands, full_name, commit_ref)
-    commands.each do |command|
+  def initial_pending_statuses(command_array)
+    command_array.each do |command|
       create_status(full_name, commit_ref, 'pending',
                     description: "Waiting at #{Time.now.strftime('%l:%M %P %Z')}.",
                     context: command)
     end
   end
 
-  def start_status(full_name, commit_ref, command)
+  def start_status(command)
     create_status(full_name, commit_ref, 'pending',
                   description: "Starting at #{Time.now.strftime('%l:%M %P %Z')}.",
                   context: command)
@@ -38,7 +38,7 @@ module SqsCiGithub
     end
   end
 
-  def end_status(full_name, commit_ref, result, secs, command, result_summary)
+  def end_status(result, secs, command, result_summary)
     description = "#{time_str(secs)} at #{Time.now.strftime('%l:%M %P %Z')}#{result_summary}"
     result ||= 'error'
     log_status(command, result, description)
@@ -55,6 +55,30 @@ module SqsCiGithub
       create_status(full_name, commit_ref, github_state,
                     description: github_description,
                     context: command)
+    end
+  end
+
+  def create_progress_status(results, command)
+    create_status(results[:failed].to_i > 0 ? 'failure' : 'pending',
+                  description: "#{results.inspect} so far at #{Time.now.strftime('%l:%M %P %Z')}.",
+                  context: command)
+  end
+
+  def status_updater(command)
+    loop do
+      begin
+        results = progress_summary(command)
+        create_progress_status(results, command)
+        sleep 60
+      rescue SignalException
+        break
+      end
+    end
+  end
+
+  def fork_status_updater(command)
+    Process.fork do
+      status_updater(project, full_name, commit_ref, command)
     end
   end
 end

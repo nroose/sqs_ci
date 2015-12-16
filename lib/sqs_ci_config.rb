@@ -32,7 +32,7 @@ module SqsCiConfig
   end
 
   def parse_commands_option(opts, options)
-    options[commands] ||= []
+    options[:commands] ||= []
     opts.on('-ccommand', '--command=command',
             '*test command to run (can have multiple parallel commands by ' \
             'using multiple -c options, and each command can be arbirarily ' \
@@ -52,6 +52,7 @@ module SqsCiConfig
   end
 
   def parse_options
+    options ||= {}
     OptionParser.new do |opts|
       opts.banner = "Usage: sqs_ci [options] (* and ** are required)\n" \
                     "       run_ci [options] (* and *** are required)\n" \
@@ -69,7 +70,7 @@ module SqsCiConfig
     case
     when options[:h]
     when [:q, :r, :commands].all? { |s| options.key? s }
-    when [:g, :commands].all? { |s| options.key? s }
+    when [:commands].all? { |s| options.key? s }
     else
       fail OptionParser::MissingArgument,
            'argument -c and either -f and -g or -q and -r are required. ' \
@@ -87,6 +88,8 @@ module SqsCiConfig
       self.full_name = /^\s*Fetch.*github.com:(.*).git/.match(fetch)[1]
       self.project = '.'
     end
+
+    self.commit_ref ||= `cd #{project} && git show-ref HEAD --hash`
   end
 
   def options_to_vars(options)
